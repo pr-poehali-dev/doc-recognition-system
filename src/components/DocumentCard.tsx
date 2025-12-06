@@ -68,7 +68,7 @@ export function DocumentCard({ baseDocument, onSelectBaseDocument }: DocumentCar
             <div>
               <label className="block text-xs text-slate-600 mb-1">Тип документа</label>
               <div className="text-sm text-slate-900">
-                Приход (Поступление), Оприходование [Arrival_Receipt_Registration_SBIS]
+                Справка КС-2
               </div>
             </div>
           </div>

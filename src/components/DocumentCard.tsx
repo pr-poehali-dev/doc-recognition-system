@@ -68,7 +68,7 @@ export function DocumentCard({ baseDocument, onSelectBaseDocument }: DocumentCar
             <div>
               <label className="block text-xs text-slate-600 mb-1">Тип документа</label>
               <div className="text-sm text-slate-900">
-                Справка КС-2
+                Справка КС-3
               </div>
             </div>
           </div>

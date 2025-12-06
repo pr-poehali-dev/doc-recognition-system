@@ -3,450 +3,361 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import Icon from '@/components/ui/icon';
 
-interface Document {
+interface DocumentField {
+  label: string;
+  value: string;
+  confidence: number;
+  verified: boolean;
+}
+
+interface PackageDocument {
   id: string;
   type: string;
-  number: string;
-  date: string;
-  recognized: boolean;
-  verified: boolean;
+  name: string;
+  pages: number;
+  size: string;
   confidence: number;
-  fields: {
-    contractNumber?: string;
-    contractDate?: string;
-    counterparty?: string;
-    amount?: string;
-    [key: string]: string | undefined;
-  };
+  fields: DocumentField[];
 }
 
 export function DocumentManagementSystem() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedPackage, setSelectedPackage] = useState('');
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [selectedDoc, setSelectedDoc] = useState<string>('doc-1');
+  const [baseDocument, setBaseDocument] = useState('');
 
-  const mockDocuments: Document[] = [
+  const packageDocs: PackageDocument[] = [
     {
-      id: 'DOC-2024-001',
-      type: 'Договор поставки',
-      number: 'ДП-45/2024',
-      date: '15.03.2024',
-      recognized: true,
-      verified: false,
-      confidence: 96,
-      fields: {
-        contractNumber: 'ДП-45/2024',
-        contractDate: '15.03.2024',
-        counterparty: 'ООО "Поставщик Про"',
-        amount: '1 250 000 ₽'
-      }
+      id: 'doc-1',
+      type: 'Разделительный лист',
+      name: 'Разделительный лист (1)',
+      pages: 4,
+      size: 'pdf',
+      confidence: 98.8,
+      fields: [
+        { label: 'Комплект (сканированные)', value: 'Да/"Грузы.да"', confidence: 98, verified: true },
+        { label: 'Договор (дата)', value: '21.03.2007', confidence: 99, verified: true },
+        { label: 'Договор (номер)', value: '020*134*24*009', confidence: 97, verified: false },
+        { label: 'Объект вид', value: '-', confidence: 0, verified: false },
+        { label: 'Объект наименование', value: '021.2023.18881.0009', confidence: 95, verified: false },
+      ]
     },
     {
-      id: 'DOC-2024-002',
-      type: 'Счет-фактура',
-      number: 'СФ-128',
-      date: '16.03.2024',
-      recognized: true,
-      verified: true,
-      confidence: 98,
-      fields: {
-        contractNumber: 'ДП-45/2024',
-        counterparty: 'ООО "Поставщик Про"',
-        amount: '1 250 000 ₽'
-      }
+      id: 'doc-2',
+      type: 'Титульный лист',
+      name: 'Титульный лист (1)',
+      pages: 4,
+      size: 'pdf',
+      confidence: 96.2,
+      fields: [
+        { label: 'Номер акта (если есть)', value: 'М2"Грузы.да"', confidence: 92, verified: false },
+        { label: 'Дата номер архивная (вход.)', value: '18.2 от 31.10.2006?', confidence: 88, verified: false },
+      ]
     },
     {
-      id: 'DOC-2024-003',
-      type: 'Акт приема-передачи',
-      number: 'АПП-089',
-      date: '20.03.2024',
-      recognized: true,
-      verified: false,
-      confidence: 92,
-      fields: {
-        contractNumber: 'ДП-45/2024',
-        counterparty: 'ООО "Поставщик Про"'
-      }
-    }
+      id: 'doc-3',
+      type: 'Справка',
+      name: 'Справка 1',
+      pages: 1,
+      size: 'pdf',
+      confidence: 94.5,
+      fields: []
+    },
+    {
+      id: 'doc-4',
+      type: 'Неопределенный документ',
+      name: 'Неопределенный документ (3)',
+      pages: 4,
+      size: 'pdf',
+      confidence: 72.3,
+      fields: []
+    },
   ];
 
-  const packageTemplates = [
-    { id: 'template-1', name: 'Договор + Счет-фактура + Акт', required: ['Договор поставки', 'Счет-фактура', 'Акт приема-передачи'] },
-    { id: 'template-2', name: 'Договор + Счет-фактура', required: ['Договор поставки', 'Счет-фактура'] },
-    { id: 'template-3', name: 'Полный комплект документов', required: ['Договор поставки', 'Счет-фактура', 'Акт приема-передачи', 'Товарная накладная'] }
-  ];
-
-  const checkPackageCompleteness = () => {
-    const template = packageTemplates.find(t => t.id === selectedPackage);
-    if (!template) return { complete: false, missing: [] };
-
-    const docTypes = mockDocuments.map(d => d.type);
-    const missing = template.required.filter(req => !docTypes.includes(req));
-
-    return { complete: missing.length === 0, missing };
-  };
-
-  const { complete, missing } = checkPackageCompleteness();
+  const currentDoc = packageDocs.find(d => d.id === selectedDoc);
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="bg-slate-900 text-white p-4 shadow-lg">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Icon name="FileText" size={28} />
-            <div>
-              <h1 className="text-xl font-semibold">Система документооборота</h1>
-              <p className="text-sm text-slate-300">Распознавание и верификация документов</p>
+      <header className="bg-white border-b border-slate-200 px-6 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Icon name="Home" size={18} className="text-blue-600" />
+              <span className="text-sm text-slate-600">Все документы</span>
+            </div>
+            <Icon name="ChevronRight" size={16} className="text-slate-400" />
+            <span className="text-sm text-slate-900">
+              Поступление № 251130U0012 от 30.11.2025 на сумму 135011.42
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            <Icon name="Search" size={20} className="text-slate-600" />
+            <Icon name="Bell" size={20} className="text-slate-600" />
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center font-medium text-sm">
+                АА
+              </div>
+              <span className="text-sm font-medium">Админов Админ</span>
             </div>
           </div>
-          <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-400">
-            <Icon name="CheckCircle2" size={14} className="mr-1" />
-            Режим интеграции
-          </Badge>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
-        <Card className="p-6">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Поиск документа-основания
-              </label>
-              <div className="relative">
-                <Icon name="Search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <Input
-                  placeholder="Введите номер договора или дату..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+      <div className="p-6">
+        <Card className="mb-4">
+          <div className="border-2 border-red-500 rounded-t-lg bg-yellow-50 px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Icon name="AlertTriangle" size={20} className="text-orange-600" />
+              <span className="text-sm font-medium text-slate-900">Документ-основание не найден</span>
             </div>
-            <div className="w-80">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Шаблон пакета документов
-              </label>
-              <Select value={selectedPackage} onValueChange={setSelectedPackage}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Выберите шаблон" />
-                </SelectTrigger>
-                <SelectContent>
-                  {packageTemplates.map(template => (
-                    <SelectItem key={template.id} value={template.id}>
-                      {template.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              Выбрать документ-основание
+            </Button>
           </div>
 
-          {selectedPackage && (
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-medium text-slate-900 flex items-center gap-2">
-                  <Icon name="Package" size={18} />
-                  Комплектность пакета
-                </h3>
-                {complete ? (
-                  <Badge className="bg-green-100 text-green-800">
-                    <Icon name="CheckCircle" size={14} className="mr-1" />
-                    Комплект полный
-                  </Badge>
-                ) : (
-                  <Badge variant="destructive">
-                    <Icon name="AlertCircle" size={14} className="mr-1" />
-                    Не хватает {missing.length} док.
-                  </Badge>
-                )}
+          <div className="px-6 py-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="px-3 py-1 bg-slate-100 border border-slate-300 rounded text-sm font-medium">
+                Справка КС-3
               </div>
-              {!complete && missing.length > 0 && (
-                <div className="text-sm text-slate-600">
-                  Отсутствуют: {missing.join(', ')}
-                </div>
-              )}
+              <h1 className="text-xl font-semibold">
+                № 251130U0012 от 30.11.2025 на сумму 135011.42
+              </h1>
+              <Button variant="outline" size="sm" className="ml-auto">
+                Действия
+                <Icon name="ChevronDown" size={16} className="ml-1" />
+              </Button>
             </div>
-          )}
+
+            <div className="flex gap-2 border-b border-slate-200">
+              <button className="px-4 py-2 text-sm font-medium text-blue-600 border-b-2 border-blue-600">
+                Общая информация
+              </button>
+              <button className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">
+                Данные
+              </button>
+              <button className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">
+                Вложения документа
+              </button>
+              <button className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">
+                Связанные документы
+              </button>
+              <button className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">
+                Доступ
+              </button>
+              <button className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">
+                Ход процесса
+              </button>
+              <button className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">
+                Данные о контрагенте
+              </button>
+            </div>
+
+            <div className="py-4 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-slate-600 mb-1">Тип документа</label>
+                  <div className="text-sm text-slate-900">
+                    Приход (Поступление), Оприходование [Arrival_Receipt_Registration_SBIS]
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-600 mb-1">Дата регистрации</label>
+                <div className="text-sm text-slate-900">-</div>
+              </div>
+            </div>
+          </div>
         </Card>
 
-        <Card className="p-6">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-            <Icon name="FileStack" size={20} />
-            Реестр документов
-          </h2>
-
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">ID документа</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Тип документа</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Номер</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Дата</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Распознано</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Достоверность</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Статус</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Действия</th>
-                </tr>
-              </thead>
-              <tbody>
-                {mockDocuments.map((doc) => (
-                  <tr key={doc.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                    <td className="py-3 px-4 text-sm font-mono text-slate-600">{doc.id}</td>
-                    <td className="py-3 px-4 text-sm text-slate-900">{doc.type}</td>
-                    <td className="py-3 px-4 text-sm font-medium text-slate-900">{doc.number}</td>
-                    <td className="py-3 px-4 text-sm text-slate-600">{doc.date}</td>
-                    <td className="py-3 px-4">
-                      {doc.recognized ? (
-                        <Badge className="bg-blue-100 text-blue-800">
-                          <Icon name="CheckCircle2" size={12} className="mr-1" />
-                          Да
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline">Нет</Badge>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-2 bg-slate-200 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full ${doc.confidence >= 95 ? 'bg-green-500' : doc.confidence >= 90 ? 'bg-yellow-500' : 'bg-orange-500'}`}
-                            style={{ width: `${doc.confidence}%` }}
-                          />
-                        </div>
-                        <span className="text-xs font-medium text-slate-700">{doc.confidence}%</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      {doc.verified ? (
-                        <Badge className="bg-green-100 text-green-800">
-                          <Icon name="ShieldCheck" size={12} className="mr-1" />
-                          Проверен
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-amber-100 text-amber-800">
-                          <Icon name="Clock" size={12} className="mr-1" />
-                          Ожидает проверки
-                        </Badge>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setSelectedDocument(doc)}
-                          >
-                            <Icon name="Eye" size={14} className="mr-1" />
-                            Открыть
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                              <Icon name="FileText" size={20} />
-                              Карточка документа: {doc.id}
-                            </DialogTitle>
-                          </DialogHeader>
-                          
-                          <Tabs defaultValue="data" className="mt-4">
-                            <TabsList className="grid w-full grid-cols-3">
-                              <TabsTrigger value="data">Данные распознавания</TabsTrigger>
-                              <TabsTrigger value="verification">Верификация</TabsTrigger>
-                              <TabsTrigger value="comparison">Сверка</TabsTrigger>
-                            </TabsList>
-
-                            <TabsContent value="data" className="space-y-4 mt-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Тип документа
-                                  </label>
-                                  <Input value={doc.type} readOnly className="bg-slate-50" />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Номер документа
-                                  </label>
-                                  <Input value={doc.number} readOnly className="bg-slate-50" />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Дата документа
-                                  </label>
-                                  <Input value={doc.date} readOnly className="bg-slate-50" />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Номер договора-основания
-                                  </label>
-                                  <Input value={doc.fields.contractNumber || '-'} readOnly className="bg-slate-50" />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Контрагент
-                                  </label>
-                                  <Input value={doc.fields.counterparty || '-'} readOnly className="bg-slate-50" />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Сумма
-                                  </label>
-                                  <Input value={doc.fields.amount || '-'} readOnly className="bg-slate-50" />
-                                </div>
-                              </div>
-
-                              <Separator />
-
-                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <div className="font-medium text-slate-900">Качество распознавания</div>
-                                    <div className="text-sm text-slate-600 mt-1">
-                                      Достоверность данных: {doc.confidence}%
-                                    </div>
-                                  </div>
-                                  <Badge className={doc.confidence >= 95 ? 'bg-green-500' : 'bg-yellow-500'}>
-                                    {doc.confidence >= 95 ? 'Отличное' : 'Хорошее'}
-                                  </Badge>
-                                </div>
-                              </div>
-                            </TabsContent>
-
-                            <TabsContent value="verification" className="space-y-4 mt-4">
-                              <div className="space-y-3">
-                                <div className="flex items-center space-x-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50">
-                                  <Checkbox id="verify-number" />
-                                  <label htmlFor="verify-number" className="flex-1 text-sm cursor-pointer">
-                                    Номер документа распознан корректно
-                                  </label>
-                                  <Icon name="Check" size={16} className="text-green-600" />
-                                </div>
-
-                                <div className="flex items-center space-x-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50">
-                                  <Checkbox id="verify-date" />
-                                  <label htmlFor="verify-date" className="flex-1 text-sm cursor-pointer">
-                                    Дата документа распознана корректно
-                                  </label>
-                                  <Icon name="Check" size={16} className="text-green-600" />
-                                </div>
-
-                                <div className="flex items-center space-x-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50">
-                                  <Checkbox id="verify-contract" />
-                                  <label htmlFor="verify-contract" className="flex-1 text-sm cursor-pointer">
-                                    Привязка к договору-основанию верна
-                                  </label>
-                                  <Icon name="Check" size={16} className="text-green-600" />
-                                </div>
-
-                                <div className="flex items-center space-x-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50">
-                                  <Checkbox id="verify-counterparty" />
-                                  <label htmlFor="verify-counterparty" className="flex-1 text-sm cursor-pointer">
-                                    Контрагент определен правильно
-                                  </label>
-                                  <Icon name="Check" size={16} className="text-green-600" />
-                                </div>
-
-                                <div className="flex items-center space-x-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50">
-                                  <Checkbox id="verify-amount" />
-                                  <label htmlFor="verify-amount" className="flex-1 text-sm cursor-pointer">
-                                    Сумма распознана точно
-                                  </label>
-                                  <Icon name="Check" size={16} className="text-green-600" />
-                                </div>
-                              </div>
-
-                              <Separator />
-
-                              <div className="flex gap-3">
-                                <Button className="flex-1 bg-green-600 hover:bg-green-700">
-                                  <Icon name="CheckCircle" size={16} className="mr-2" />
-                                  Подтвердить верификацию
-                                </Button>
-                                <Button variant="outline" className="flex-1">
-                                  <Icon name="XCircle" size={16} className="mr-2" />
-                                  Отклонить
-                                </Button>
-                              </div>
-                            </TabsContent>
-
-                            <TabsContent value="comparison" className="space-y-4 mt-4">
-                              <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">
-                                  Выбор документа для сверки
-                                </label>
-                                <Select>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Выберите документ из реестра" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {mockDocuments
-                                      .filter(d => d.id !== doc.id)
-                                      .map(d => (
-                                        <SelectItem key={d.id} value={d.id}>
-                                          {d.type} - {d.number} от {d.date}
-                                        </SelectItem>
-                                      ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-
-                              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                                <h4 className="font-medium text-slate-900 mb-3 flex items-center gap-2">
-                                  <Icon name="GitCompare" size={18} />
-                                  Результаты сверки
-                                </h4>
-                                
-                                <div className="space-y-2">
-                                  <div className="flex justify-between items-center p-2 bg-white rounded border border-slate-200">
-                                    <span className="text-sm text-slate-600">Номер договора</span>
-                                    <div className="flex items-center gap-2">
-                                      <Badge variant="outline">Совпадает</Badge>
-                                      <Icon name="CheckCircle" size={16} className="text-green-600" />
-                                    </div>
-                                  </div>
-
-                                  <div className="flex justify-between items-center p-2 bg-white rounded border border-slate-200">
-                                    <span className="text-sm text-slate-600">Контрагент</span>
-                                    <div className="flex items-center gap-2">
-                                      <Badge variant="outline">Совпадает</Badge>
-                                      <Icon name="CheckCircle" size={16} className="text-green-600" />
-                                    </div>
-                                  </div>
-
-                                  <div className="flex justify-between items-center p-2 bg-white rounded border border-slate-200">
-                                    <span className="text-sm text-slate-600">Сумма</span>
-                                    <div className="flex items-center gap-2">
-                                      <Badge variant="outline">Совпадает</Badge>
-                                      <Icon name="CheckCircle" size={16} className="text-green-600" />
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <Button className="w-full">
-                                <Icon name="FileCheck" size={16} className="mr-2" />
-                                Создать карточку в ЕСМ
-                              </Button>
-                            </TabsContent>
-                          </Tabs>
-                        </DialogContent>
-                      </Dialog>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <Card>
+          <div className="border-2 border-red-500 rounded-t-lg px-4 py-3">
+            <h2 className="text-base font-semibold text-slate-900">
+              Пакет по Договору №555-1 от 01.12.2025
+            </h2>
           </div>
+
+          <Tabs defaultValue="attributes" className="w-full">
+            <div className="border-b border-slate-200 px-4">
+              <TabsList className="bg-transparent border-0 h-auto p-0">
+                <TabsTrigger 
+                  value="attributes"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:bg-transparent px-4 py-2"
+                >
+                  Работа с атрибутами
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="files"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:bg-transparent px-4 py-2"
+                >
+                  Загруженные файлы
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="attributes" className="m-0 p-0">
+              <div className="flex">
+                <div className="w-80 border-r border-slate-200 bg-slate-50">
+                  <div className="p-3 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
+                    <span className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                      <Icon name="HelpCircle" size={16} className="text-blue-600" />
+                      Содержимое пакета
+                    </span>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                      <Icon name="Settings2" size={14} />
+                    </Button>
+                  </div>
+
+                  <ScrollArea className="h-[500px]">
+                    {packageDocs.map((doc) => (
+                      <button
+                        key={doc.id}
+                        onClick={() => setSelectedDoc(doc.id)}
+                        className={`w-full text-left p-3 border-b border-slate-200 hover:bg-slate-100 transition-colors ${
+                          selectedDoc === doc.id ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <Icon 
+                            name={doc.confidence > 90 ? "CheckCircle2" : "AlertCircle"} 
+                            size={16} 
+                            className={doc.confidence > 90 ? "text-green-600 mt-0.5" : "text-orange-600 mt-0.5"} 
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-slate-900 mb-0.5">
+                              {doc.type}
+                            </div>
+                            <div className="text-xs text-slate-600">
+                              {doc.name} • Пакет {doc.pages} {doc.size}
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </ScrollArea>
+                </div>
+
+                <div className="flex-1 flex">
+                  <div className="flex-1 p-4 bg-white">
+                    <div className="mb-4">
+                      <h3 className="text-base font-semibold text-slate-900 mb-2">
+                        {currentDoc?.type}
+                      </h3>
+                      <div className="bg-slate-100 rounded-lg h-96 flex items-center justify-center border border-slate-300">
+                        <div className="text-center">
+                          <Icon name="FileText" size={64} className="text-slate-400 mx-auto mb-2" />
+                          <div className="text-sm text-slate-600">Превью документа</div>
+                          <div className="text-xs text-slate-500 mt-1">
+                            {currentDoc?.name} • {currentDoc?.pages} стр.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="text-sm font-medium text-slate-700 mb-2">Распознанные данные:</div>
+                      {currentDoc?.fields.slice(0, 3).map((field, idx) => (
+                        <div key={idx} className="text-xs p-2 bg-slate-50 rounded border border-slate-200">
+                          <span className="font-medium text-slate-700">{field.label}:</span>
+                          <span className="ml-2 text-slate-900">{field.value}</span>
+                          {field.value.includes('Грузы.да') && (
+                            <span className="ml-2 text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded text-xs">
+                              Титульник удален, документ осложнен
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="w-80 border-l border-slate-200 bg-slate-50">
+                    <div className="p-3 bg-slate-100 border-b border-slate-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-slate-700">Извлеченные данные</span>
+                        <Icon name="HelpCircle" size={16} className="text-blue-600" />
+                      </div>
+                      <Button variant="outline" size="sm" className="w-full text-xs">
+                        <Icon name="RotateCw" size={12} className="mr-1" />
+                        Параметры
+                      </Button>
+                    </div>
+
+                    <ScrollArea className="h-[500px]">
+                      <div className="p-3 space-y-3">
+                        {currentDoc?.fields.map((field, idx) => (
+                          <div key={idx} className="bg-white rounded-lg border border-slate-200 p-3">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="text-xs font-medium text-slate-900">
+                                {field.label}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                {field.verified ? (
+                                  <>
+                                    <Icon name="Lock" size={12} className="text-slate-400" />
+                                    <Icon name="Check" size={12} className="text-green-600" />
+                                  </>
+                                ) : (
+                                  <Icon name="AlertCircle" size={12} className="text-orange-500" />
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <div>
+                                <div className="text-xs text-slate-600 mb-1">Страница 1</div>
+                                <Input 
+                                  value={field.value}
+                                  readOnly
+                                  className="text-xs h-8"
+                                />
+                              </div>
+
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1">
+                                  <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full ${
+                                        field.confidence >= 95 ? 'bg-green-500' : 
+                                        field.confidence >= 90 ? 'bg-yellow-500' : 
+                                        field.confidence >= 80 ? 'bg-orange-500' : 
+                                        'bg-red-500'
+                                      }`}
+                                      style={{ width: `${field.confidence}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-xs font-medium text-slate-700">
+                                    {field.confidence}%
+                                  </span>
+                                </div>
+                                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
+                                  <Icon name="Eye" size={12} />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+
+                        {currentDoc && currentDoc.fields.length === 0 && (
+                          <div className="text-center py-8 text-sm text-slate-500">
+                            Нет извлеченных данных
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="files" className="p-6">
+              <div className="text-center py-12 text-slate-500">
+                Загруженные файлы отображаются здесь
+              </div>
+            </TabsContent>
+          </Tabs>
         </Card>
       </div>
     </div>

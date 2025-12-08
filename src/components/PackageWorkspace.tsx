@@ -16,6 +16,9 @@ export interface PackageDocument {
   id: string;
   type: string;
   name: string;
+  documentNumber?: string;
+  documentDate?: string;
+  documentAmount?: string;
   pages: number;
   size: string;
   confidence: number;

@@ -13,8 +13,10 @@ export function DocumentManagementSystem() {
   const packageDocs: PackageDocument[] = [
     {
       id: 'doc-1',
-      type: 'Разделительный лист',
-      name: 'Разделительный лист (1)',
+      type: 'Отчет агента',
+      name: 'Отчет агента',
+      documentNumber: 'AG-001',
+      documentDate: '01.12.2025',
       pages: 4,
       size: 'pdf',
       confidence: 98.8,
@@ -28,8 +30,10 @@ export function DocumentManagementSystem() {
     },
     {
       id: 'doc-2',
-      type: 'Титульный лист',
-      name: 'Титульный лист (1)',
+      type: 'КС-2',
+      name: 'КС-2',
+      documentNumber: 'KS2-555',
+      documentDate: '02.12.2025',
       pages: 4,
       size: 'pdf',
       confidence: 96.2,
@@ -40,8 +44,11 @@ export function DocumentManagementSystem() {
     },
     {
       id: 'doc-3',
-      type: 'Справка',
-      name: 'Справка 1',
+      type: 'Справка КС-3',
+      name: 'Справка КС-3',
+      documentNumber: 'KS3-777',
+      documentDate: '03.12.2025',
+      documentAmount: '135011.42',
       pages: 1,
       size: 'pdf',
       confidence: 94.5,
@@ -49,8 +56,10 @@ export function DocumentManagementSystem() {
     },
     {
       id: 'doc-4',
-      type: 'Неопределенный документ',
-      name: 'Неопределенный документ (3)',
+      type: 'Товарно-транспортная накладная ТТН',
+      name: 'Товарно-транспортная накладная ТТН',
+      documentNumber: 'TTN-999',
+      documentDate: '04.12.2025',
       pages: 4,
       size: 'pdf',
       confidence: 72.3,
@@ -72,9 +81,20 @@ export function DocumentManagementSystem() {
       <DocumentHeader />
 
       <div className="p-6">
+        <div className="mb-6 flex items-center gap-2 text-sm">
+          <Icon name="Home" size={16} className="text-slate-600" />
+          <span className="text-slate-600">Все пакеты</span>
+          <Icon name="ChevronRight" size={16} className="text-slate-400" />
+          <span className="text-slate-900">Пакет по Договору № 555-1 от 01.12.2025</span>
+        </div>
+
         <DocumentCard 
           baseDocument={baseDocument}
           onSelectBaseDocument={() => setIsModalOpen(true)}
+          documentType={currentDoc?.type || 'Справка КС-3'}
+          documentNumber={currentDoc?.documentNumber || 'KS3-777'}
+          documentDate={currentDoc?.documentDate || '03.12.2025'}
+          documentAmount={currentDoc?.documentAmount}
         />
 
         <PackageWorkspace 

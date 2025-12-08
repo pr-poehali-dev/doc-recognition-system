@@ -5,9 +5,13 @@ import Icon from '@/components/ui/icon';
 interface DocumentCardProps {
   baseDocument: string;
   onSelectBaseDocument: () => void;
+  documentType: string;
+  documentNumber: string;
+  documentDate: string;
+  documentAmount?: string;
 }
 
-export function DocumentCard({ baseDocument, onSelectBaseDocument }: DocumentCardProps) {
+export function DocumentCard({ baseDocument, onSelectBaseDocument, documentType, documentNumber, documentDate, documentAmount }: DocumentCardProps) {
   return (
     <Card className="mb-4">
       <div className="border-2 border-red-500 rounded-t-lg bg-yellow-50 px-4 py-3 flex items-center justify-between">
@@ -28,10 +32,10 @@ export function DocumentCard({ baseDocument, onSelectBaseDocument }: DocumentCar
       <div className="px-6 py-4">
         <div className="flex items-center gap-3 mb-4">
           <div className="px-3 py-1 bg-slate-100 border border-slate-300 rounded text-sm font-medium">
-            Справка КС-3
+            {documentType}
           </div>
           <h1 className="text-xl font-semibold">
-            № 251130U0012 от 30.11.2025 на сумму 135011.42
+            № {documentNumber} от {documentDate}{documentAmount ? ` на сумму ${documentAmount}` : ''}
           </h1>
           <Button variant="outline" size="sm" className="ml-auto">
             Действия
@@ -68,7 +72,7 @@ export function DocumentCard({ baseDocument, onSelectBaseDocument }: DocumentCar
             <div>
               <label className="block text-xs text-slate-600 mb-1">Тип документа</label>
               <div className="text-sm text-slate-900">
-                Справка КС-3
+                {documentType}
               </div>
             </div>
           </div>

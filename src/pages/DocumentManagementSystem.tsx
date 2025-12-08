@@ -2,14 +2,12 @@ import { useState } from 'react';
 import { DocumentHeader } from '@/components/DocumentHeader';
 import { DocumentCard } from '@/components/DocumentCard';
 import { PackageWorkspace, PackageDocument } from '@/components/PackageWorkspace';
-import { BaseDocumentDialog, BaseDocument } from '@/components/BaseDocumentDialog';
+import { BaseDocumentModal } from '@/components/BaseDocumentModal';
 
 export function DocumentManagementSystem() {
   const [selectedDoc, setSelectedDoc] = useState<string>('doc-1');
   const [baseDocument, setBaseDocument] = useState('');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedBaseDoc, setSelectedBaseDoc] = useState<string>('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const packageDocs: PackageDocument[] = [
     {
@@ -59,41 +57,13 @@ export function DocumentManagementSystem() {
     },
   ];
 
-  const baseDocuments: BaseDocument[] = [
-    {
-      id: 'base-1',
-      type: 'Договор',
-      title: 'Договор № 555-1 от 01.12.2025',
-      registrationNumber: '',
-      registrationDate: '-',
-      status: 'Подписание'
-    },
-    {
-      id: 'base-2',
-      type: 'Договор',
-      title: 'Договор № 58666-25 от 02.12.2025',
-      registrationNumber: '',
-      registrationDate: '-',
-      status: 'Создан'
-    },
-    {
-      id: 'base-3',
-      type: 'Договор',
-      title: 'Договор № 789-3 от 28.11.2025',
-      registrationNumber: '',
-      registrationDate: '-',
-      status: 'Создан'
-    },
-  ];
+
 
   const currentDoc = packageDocs.find(d => d.id === selectedDoc);
 
-  const handleSaveBaseDocument = () => {
-    const selected = baseDocuments.find(d => d.id === selectedBaseDoc);
-    if (selected) {
-      setBaseDocument(selected.title);
-      setIsDialogOpen(false);
-    }
+  const handleSelectContract = (contract: any) => {
+    setBaseDocument(contract.title);
+    setIsModalOpen(false);
   };
 
   return (
@@ -103,7 +73,7 @@ export function DocumentManagementSystem() {
       <div className="p-6">
         <DocumentCard 
           baseDocument={baseDocument}
-          onSelectBaseDocument={() => setIsDialogOpen(true)}
+          onSelectBaseDocument={() => setIsModalOpen(true)}
         />
 
         <PackageWorkspace 
@@ -114,15 +84,10 @@ export function DocumentManagementSystem() {
         />
       </div>
 
-      <BaseDocumentDialog 
-        isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        baseDocuments={baseDocuments}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        selectedBaseDoc={selectedBaseDoc}
-        onSelectBaseDoc={setSelectedBaseDoc}
-        onSave={handleSaveBaseDocument}
+      <BaseDocumentModal 
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSelect={handleSelectContract}
       />
     </div>
   );

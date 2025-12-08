@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { DocumentManagementSystem } from "./pages/DocumentManagementSystem";
 import { PackageTemplatePage } from "./pages/PackageTemplatePage";
+import { PackageCompleteness } from "./pages/PackageCompleteness";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -19,6 +20,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<DocumentManagementSystem />} />
           <Route path="/package-template" element={<PackageTemplatePage />} />
+          <Route path="/package-completeness" element={<PackageCompleteness />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

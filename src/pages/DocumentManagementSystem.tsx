@@ -3,6 +3,7 @@ import { DocumentHeader } from '@/components/DocumentHeader';
 import { DocumentCard } from '@/components/DocumentCard';
 import { PackageWorkspace, PackageDocument } from '@/components/PackageWorkspace';
 import { BaseDocumentModal } from '@/components/BaseDocumentModal';
+import Icon from '@/components/ui/icon';
 
 export function DocumentManagementSystem() {
   const [selectedDoc, setSelectedDoc] = useState<string>('doc-1');
